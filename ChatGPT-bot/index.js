@@ -1,5 +1,6 @@
 //DOMContentLoaded 이벤트 사용 => DOM이 완전히 로드된 후에 JS코드가 실행
 
+
 document.addEventListener('DOMContentLoaded', function(){
     const chatLog = document.getElementById('chat-log'),
         userInput = document.getElementById('user-input'),
@@ -9,22 +10,49 @@ document.addEventListener('DOMContentLoaded', function(){
 
 sendbutton.addEventListener('click', sendMessage);
 
-function sendMessage() {
-    //1. 받아온 값 저장하기:trim()
-    const message = userInput.value.trim();
-    //2. 공백만 입력받았을 때 send하지 않기
-    if (message === '') {
-        return
-    } else {
-        appendMessage('user',message);
-        setTimeout(() => {
-            appendMessage('bot','안녕하세요!\n');
-            buttonIcon.classList.add('fa-solid','fa-paper-plane');
-            buttonIcon.classList.remove('fas','fa-spinner','fa-pulse');
-        },1000);
+userInput.addEventListener('keydown',(event)=>{
+    if(event.key==='Enter') {
+        sendMessage();
+    }
+});
+
+
+async function sendMessage() {
+    const message=userInput.value.trim();
+
+    if(message ==='') {
         return
     }
-    //3. 사용자가 입력한 messge 화면에 띄우기(container)
+
+    appendMessage('user',message);
+    userInput.value='';
+    const API_URL = "https://api.openai.com/v1/chat/completions";
+    const API_KEY = config.apikey;
+    const options={
+        method: 'POST',
+        headers: {
+	    'content-type': 'application/json',
+	    Authorization: `Bearer ${API_KEY}`,
+        },
+        body: JSON.stringify({
+	        model: "gpt-3.5-turbo",
+	        messages: [{ role: "user", content: message }],
+	        max_tokens: 100,
+            })
+    };
+    
+    try {
+        const response=await fetch(API_URL,options);
+        const data=await response.json();
+        console.log(data);
+        appendMessage('bot',data);
+        buttonIcon.classList.add('fa-solid','fa-paper-plane');
+        buttonIcon.classList.remove('fas','fa-spinner','fa-pulse');
+        
+    } catch(error) {
+        console.error("Error: ",error);
+        appendMessage('bot',`Error: ${error}`);
+    }
 }
 
 function appendMessage(sender, message) {
